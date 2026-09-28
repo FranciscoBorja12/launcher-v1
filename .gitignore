@@ -14,15 +14,48 @@ dist-ssr
 release
 *.local
 
+# Generated installers and update metadata
+*.exe
+*.AppImage
+*.deb
+*.rpm
+*.dmg
+*.blockmap
+latest*.yml
+
+# Environment files and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.keystore
+
+# Local launcher state (must never be versioned)
+session.bin
+session.json
+settings.json
+skins.json
+
+# Test, coverage and tool caches
+coverage
+.nyc_output
+.cache
+.electron
+.electron-builder-cache
+*.tsbuildinfo
+
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
+Thumbs.db
+Desktop.ini
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-
-/dist-electron
-dist-electron/preload.js

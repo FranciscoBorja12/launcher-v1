@@ -1,17 +1,19 @@
 :root {
   /* Colors */
-  --primary: #ff5722;
-  --primary-hover: #e64a19;
-
-
-  --bg-dark: #121212;
-  --text-main: #ffffff;
-  --text-muted: #aaaaaa;
+  --primary: #e4ab3f;
+  --primary-hover: #f1c767;
+  --gold-soft: #efc264;
+  --bg-dark: #0c1018;
+  --bg-deep: #080b12;
+  --text-main: #f5f2eb;
+  --text-muted: #9b9da7;
+  --text-dim: #70737e;
+  --font-ui: Inter, Manrope, "Segoe UI", sans-serif;
 
   /* Glassmorphism */
-  --glass-bg: rgba(30, 30, 30, 0.65);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-blur: 12px;
+  --glass-bg: rgba(18, 22, 32, 0.76);
+  --glass-border: rgba(255, 255, 255, 0.085);
+  --glass-blur: 18px;
 
   /* Shadows */
   --shadow-lg: 0 10px 30px rgba(0, 0, 0, 0.5);
@@ -20,5 +22,5 @@
   --sidebar-width: 400px;
 
   /* UI System */
-  --btn-radius: 5px;
+  --btn-radius: 12px;
 }

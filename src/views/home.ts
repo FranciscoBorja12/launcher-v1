@@ -9,14 +9,30 @@ marked.use({
     link(link) {
       const href = link.href ?? '#'
       const titleAttr = link.title ? ` title="${link.title}"` : ''
-      return `<a href="${href}" target="_blank" rel="noopener noreferrer"${titleAttr}>${link.text}</a>`
+    const safeHref = /^(https:\/\/|mailto:)/i.test(href) ? href : '#'
+    return `<a href="${safeHref}" target="_blank" rel="noopener noreferrer"${titleAttr}>${link.text}</a>`
     }
   }
 })
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString)
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+  return date.toLocaleDateString('es-SV', { month: 'short', day: 'numeric', year: 'numeric' })
+}
+
+const escapeHTML = (value: unknown) =>
+  String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;')
+
+const safeColor = (value: unknown) => (/^#[0-9a-f]{6}$/i.test(String(value)) ? String(value) : '#e4ab3f')
+
+const safeImage = (value: unknown) => {
+  const url = String(value ?? '')
+  return /^(https:\/\/|data:image\/)/i.test(url) ? escapeHTML(url) : ''
 }
 
 const parseNews = (rawContent: string) =>
@@ -24,7 +40,8 @@ const parseNews = (rawContent: string) =>
     ADD_ATTR: ['target']
   })
 
-const backgroundColor = (color: string) => {
+const backgroundColor = (rawColor: string) => {
+  const color = safeColor(rawColor)
   const r = parseInt(color.slice(1, 3), 16)
   const g = parseInt(color.slice(3, 5), 16)
   const b = parseInt(color.slice(5, 7), 16)
@@ -66,7 +83,7 @@ export function initHome() {
       .map(
         (p) => `
       <div class="profile-option ${selectedProfile?.id === p.id ? 'active' : ''}" data-id="${p.id}">
-        ${p.name}
+        ${escapeHTML(p.name)}
       </div>
     `
       )
@@ -94,7 +111,7 @@ export function initHome() {
       statusDot.classList.remove('online', 'offline')
       statusDot.classList.add('pinging')
     }
-    if (statusText) statusText.innerHTML = 'Pinging...'
+    if (statusText) statusText.innerText = 'Consultando...'
     if (playerCount) playerCount.innerHTML = ''
 
     const status = selectedProfile ? await server.getStatus(selectedProfile.ip, selectedProfile.port || 25565) : null
@@ -104,44 +121,45 @@ export function initHome() {
         statusDot.classList.remove('pinging', 'offline')
         statusDot.classList.add('online')
       }
-      if (statusText) statusText.innerHTML = 'Online'
+      if (statusText) statusText.innerText = 'En línea'
 
       if (playerCount) {
-        playerCount.innerHTML = `<i class="fa-fw fa-solid fa-users"></i>&nbsp;&nbsp;${status.players.online.toLocaleString()} / ${status.players.max.toLocaleString()}`
+        playerCount.innerHTML = `<i class="fa-fw fa-solid fa-users"></i>&nbsp;&nbsp;${Number(status.players.online).toLocaleString()} / ${Number(status.players.max).toLocaleString()}`
       }
     } else {
       if (statusDot) {
         statusDot.classList.remove('pinging', 'online')
         statusDot.classList.add('offline')
       }
-      if (statusText) statusText.innerHTML = 'Offline'
+      if (statusText) statusText.innerText = 'Fuera de línea'
       if (playerCount) playerCount.innerHTML = ''
     }
   }
 
   const loadNews = async () => {
     if (!newsList) return
-    newsList.innerHTML = '<div style="text-align:center; padding: 20px; color: #888;">Loading news...</div>'
+    newsList.innerHTML = '<div style="text-align:center; padding: 20px; color: #888;">Cargando noticias...</div>'
     const feed = await news.getNews()
 
     newsList.innerHTML = ''
 
     if (!feed || feed.length === 0) {
-      newsList.innerHTML = '<div style="text-align:center; color: #888;">No news available.</div>'
+      newsList.innerHTML = '<div style="text-align:center; color: #888;">Todavía no hay noticias publicadas.</div>'
       return
     }
 
     feed.forEach((item: any) => {
       let tagsHTML = ''
       item.tags.forEach((tag: any) => {
-        tagsHTML += `<span class="tag" style="color: ${tag.color}; background-color: ${backgroundColor(tag.color)}">${tag.name}</span>`
+        const color = safeColor(tag.color)
+        tagsHTML += `<span class="tag" style="color: ${color}; background-color: ${backgroundColor(color)}">${escapeHTML(tag.name)}</span>`
       })
       const articleHTML = `
         <article class="news-article">
           <div class="article-meta">
             <div class="author">
-              <img src="https://minotar.net/helm/${item.author.username}/24" alt="Author" />
-              <span>${item.author.username ?? 'Admin Team'}</span>
+              <img src="https://minotar.net/helm/${encodeURIComponent(item.author.username ?? 'Steve')}/24" alt="Autor" />
+              <span>${escapeHTML(item.author.username ?? 'Equipo Osiris')}</span>
             </div>
             <span class="separator">•</span>
             <span class="date">${formatDate(item.createdAt)}</span>
@@ -149,9 +167,9 @@ export function initHome() {
             <div class="tags-container">${tagsHTML}</div>
           </div>
 
-          <h3>${item.title}</h3>
+          <h3>${escapeHTML(item.title)}</h3>
           
-          ${item.image ? `<img src="${item.image}" alt="News Image" onerror="this.style.display='none'"/>` : ''}
+          ${safeImage(item.image) ? `<img src="${safeImage(item.image)}" alt="Imagen de la noticia"/>` : ''}
 
           <div class="article-content">
             ${parseNews(item.content)}
@@ -206,7 +224,7 @@ Ready to launch the game with the following settings:
     `
 
     logger.log(message)
-    game.launch({ account: user, settings: config, profileSlug: selectedProfile?.slug })
+    game.launch({ settings: config, profileSlug: selectedProfile?.slug })
   })
 
   profileSelector?.querySelector('.selected-profile')?.addEventListener('click', () => {
@@ -221,13 +239,13 @@ Ready to launch the game with the following settings:
 
   game.launchComputeDownload(() => {
     setIndeterminate(true)
-    if (progressLabel) progressLabel.innerText = 'Preparing download...'
+    if (progressLabel) progressLabel.innerText = 'Preparando descarga...'
     if (progressPercent) progressPercent.innerText = ''
   })
   game.launchDownload((download) => {
     setIndeterminate(false)
     totalToDownload = download.total.size
-    if (progressLabel) progressLabel.innerText = `Downloading files...`
+    if (progressLabel) progressLabel.innerText = `Descargando archivos...`
   })
   game.downloadProgress((progress) => {
     if (!totalDownloadedByType.find((t) => t.type === progress.type)) {
@@ -238,30 +256,30 @@ Ready to launch the game with the following settings:
     if (progressBar && progressLabel && progressPercent) {
       const downloadedSum = totalDownloadedByType.reduce((acc, curr) => acc + curr.size, 0)
       progressBar.style.width = `${Math.min((downloadedSum / totalToDownload) * 100, 100)}%`
-      progressLabel.innerText = `Downloading ${progress.type === 'JAVA' ? 'Java' : 'game files'}...`
+      progressLabel.innerText = `Descargando ${progress.type === 'JAVA' ? 'Java' : 'archivos del juego'}...`
       progressPercent.innerText = `${Math.round(Math.min((downloadedSum / totalToDownload) * 100, 100))}%`
     }
   })
   game.launchInstallLoader(() => {
     setIndeterminate(true)
-    if (progressLabel) progressLabel.innerText = 'Extracting files...'
+    if (progressLabel) progressLabel.innerText = 'Extrayendo archivos...'
     if (progressPercent) progressPercent.innerText = ''
   })
   game.launchExtractNatives(() => {
     setIndeterminate(true)
-    if (progressLabel) progressLabel.innerText = 'Extracting files...'
+    if (progressLabel) progressLabel.innerText = 'Extrayendo archivos...'
   })
   game.launchCopyAssets(() => {
     setIndeterminate(true)
-    if (progressLabel) progressLabel.innerText = 'Extracting files...'
+    if (progressLabel) progressLabel.innerText = 'Preparando recursos...'
   })
   game.launchPatchLoader(() => {
     setIndeterminate(true)
-    if (progressLabel) progressLabel.innerText = 'Finalizing setup...'
+    if (progressLabel) progressLabel.innerText = 'Finalizando instalación...'
   })
   game.launchLaunch(() => {
     setIndeterminate(true)
-    if (progressLabel) progressLabel.innerText = 'Launching game...'
+    if (progressLabel) progressLabel.innerText = 'Iniciando Minecraft...'
   })
   game.launched(() => {
     setTimeout(() => {
@@ -272,8 +290,6 @@ Ready to launch the game with the following settings:
     }, 10000)
   })
 }
-
-
 
 
 

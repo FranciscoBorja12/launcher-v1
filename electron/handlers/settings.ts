@@ -6,6 +6,29 @@ import os from 'node:os'
 
 const settingsPath = path.join(app.getPath('userData'), 'settings.json')
 
+function isValidSettings(value: unknown): value is IGameSettings {
+  if (!value || typeof value !== 'object') return false
+  const settings = value as IGameSettings
+  const memory = settings.memory
+  const resolution = settings.resolution
+  return (
+    ['bundled', 'system', 'path'].includes(settings.java) &&
+    Number.isFinite(memory?.min) &&
+    Number.isFinite(memory?.max) &&
+    memory.min >= 0.5 &&
+    memory.max <= 16 &&
+    memory.min <= memory.max &&
+    Number.isInteger(resolution?.width) &&
+    Number.isInteger(resolution?.height) &&
+    resolution.width >= 640 &&
+    resolution.width <= 7680 &&
+    resolution.height >= 480 &&
+    resolution.height <= 4320 &&
+    typeof resolution.fullscreen === 'boolean' &&
+    ['close', 'keep', 'hide'].includes(settings.launcherAction)
+  )
+}
+
 export interface ISystemInfo {
   totalMem: number // in GB
   resolution: {
@@ -50,8 +73,9 @@ export function registerSettingsHandlers() {
         fs.writeFileSync(settingsPath, JSON.stringify(DEFAULT_SETTINGS, null, 2))
         return DEFAULT_SETTINGS
       }
-      const data = fs.readFileSync(settingsPath, 'utf-8')
-      return { ...DEFAULT_SETTINGS, ...JSON.parse(data) }
+      const parsed = JSON.parse(fs.readFileSync(settingsPath, 'utf-8'))
+      fs.chmodSync(settingsPath, 0o600)
+      return isValidSettings(parsed) ? parsed : DEFAULT_SETTINGS
     } catch (err) {
       logger.error('Error reading settings:', err)
       return DEFAULT_SETTINGS
@@ -60,7 +84,12 @@ export function registerSettingsHandlers() {
 
   ipcMain.handle('settings:set', async (_event, newSettings: IGameSettings) => {
     try {
-      fs.writeFileSync(settingsPath, JSON.stringify(newSettings, null, 2))
+      if (!isValidSettings(newSettings)) {
+        logger.warn('Rejected invalid game settings')
+        return false
+      }
+      fs.writeFileSync(settingsPath, JSON.stringify(newSettings, null, 2), { mode: 0o600 })
+      fs.chmodSync(settingsPath, 0o600)
       return true
     } catch (err) {
       logger.error('Error writing settings:', err)
@@ -90,4 +119,3 @@ export function registerSettingsHandlers() {
     return result.filePaths[0] ?? null
   })
 }
-

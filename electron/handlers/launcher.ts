@@ -1,19 +1,46 @@
 import { ipcMain, BrowserWindow, app } from 'electron'
 import { Launcher } from 'eml-lib'
-import type { Account, IProfile } from 'eml-lib'
+import type { IProfile } from 'eml-lib'
 import type { IGameSettings } from './settings'
 import logger from 'electron-log/main'
 import { ADMINTOOL_URL } from '../const'
+import { getAuthenticatedAccount } from './auth'
 
 export function registerLauncherHandlers(mainWindow: BrowserWindow) {
-  ipcMain.handle('game:launch', (_event, payload: { account: Account; settings: IGameSettings; profileSlug: string }) => {
-    const { account, settings, profileSlug } = payload
+  ipcMain.handle('game:launch', (_event, payload: { settings: IGameSettings; profileSlug: string }) => {
+    const { settings, profileSlug } = payload
+    const account = getAuthenticatedAccount()
+    const validAccount =
+      account &&
+      typeof account.name === 'string' &&
+      /^[a-zA-Z0-9_]{3,16}$/.test(account.name) &&
+      typeof account.uuid === 'string' &&
+      ['msa', 'crack'].includes(account.meta?.type)
+    const validSettings =
+      Number.isFinite(settings?.memory?.min) &&
+      Number.isFinite(settings?.memory?.max) &&
+      settings.memory.min >= 0.5 &&
+      settings.memory.max <= 16 &&
+      settings.memory.min <= settings.memory.max &&
+      Number.isInteger(settings?.resolution?.width) &&
+      Number.isInteger(settings?.resolution?.height) &&
+      settings.resolution.width >= 640 &&
+      settings.resolution.width <= 7680 &&
+      settings.resolution.height >= 480 &&
+      settings.resolution.height <= 4320 &&
+      ['close', 'keep', 'hide'].includes(settings?.launcherAction)
+
+    if (!validAccount || !validSettings || profileSlug !== 'osiris') {
+      logger.warn('Rejected invalid game launch payload')
+      return
+    }
+
     const java = settings.java === 'system' ? { install: 'manual' as const, absolutePath: 'java' } : { install: 'auto' as const }
     logger.log('Launching')
 
     const launcher = new Launcher({
       url: ADMINTOOL_URL,
-      root: 'goldfrite',
+      root: 'osiris',
       profile: { slug: profileSlug },
       account: account,
       cleaning: {
@@ -30,6 +57,14 @@ export function registerLauncherHandlers(mainWindow: BrowserWindow) {
         fullscreen: settings.resolution.fullscreen
       }
     })
+
+    const redactSecrets = (value: unknown) => {
+      let redacted = String(value)
+      for (const secret of [account.accessToken, account.clientToken, account.refreshToken]) {
+        if (secret && secret.length >= 8) redacted = redacted.replaceAll(secret, '[REDACTED]')
+      }
+      return redacted
+    }
 
     launcher.on('launch_compute_download', () => {
       logger.log('Computing download...')
@@ -131,8 +166,9 @@ export function registerLauncherHandlers(mainWindow: BrowserWindow) {
       mainWindow.webContents.send('game:launched')
     })
     launcher.on('launch_data', (message) => {
-      logger.log(message)
-      mainWindow.webContents.send('game:launch_data', message)
+      const safeMessage = redactSecrets(message)
+      logger.log(safeMessage)
+      mainWindow.webContents.send('game:launch_data', safeMessage)
     })
     launcher.on('launch_close', (code) => {
       logger.log(`Closed with code ${code}.`)
@@ -140,7 +176,7 @@ export function registerLauncherHandlers(mainWindow: BrowserWindow) {
     })
 
     launcher.on('launch_debug', (message) => {
-      mainWindow.webContents.send('game:launch_debug', message)
+      mainWindow.webContents.send('game:launch_debug', redactSecrets(message))
     })
     launcher.on('patch_debug', (message) => {
       mainWindow.webContents.send('game:patch_debug', message)
@@ -153,4 +189,3 @@ export function registerLauncherHandlers(mainWindow: BrowserWindow) {
     }
   })
 }
-

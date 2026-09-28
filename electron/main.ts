@@ -9,11 +9,12 @@ import { registerBackgroundHandlers } from './handlers/background'
 import { registerMaintenanceHandlers } from './handlers/maintenance'
 import { registerBootstrapHandlers } from './handlers/bootstraps'
 import logger from 'electron-log/main'
+import fs from 'node:fs'
 import { registerProfilesHandlers } from './handlers/profiles'
 import { registerSkinHandlers } from './handlers/skin'
 
-const APP_TITLE = 'EML Template'
-const BG_COLOR = '#121212'
+const APP_TITLE = 'Osiris Launcher'
+const BG_COLOR = '#080b12'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -38,16 +39,37 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       nodeIntegration: false,
       contextIsolation: true,
-      devTools: true
+      devTools: Boolean(process.env.VITE_DEV_SERVER_URL),
+      sandbox: true,
+      webSecurity: true,
+      allowRunningInsecureContent: false
     }
   })
 
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    if (url.startsWith('https:') || url.startsWith('http:')) {
-      shell.openExternal(url)
+    try {
+      const target = new URL(url)
+      const trustedHosts = ['osirismc.net', 'curseforge.com', 'xbox.com']
+      const trusted = target.protocol === 'https:' && trustedHosts.some((host) => target.hostname === host || target.hostname.endsWith(`.${host}`))
+      if (trusted) void shell.openExternal(target.toString())
+    } catch {
+      logger.warn('Blocked malformed external URL')
     }
     return { action: 'deny' }
   })
+
+  mainWindow.webContents.on('will-navigate', (event) => {
+    event.preventDefault()
+    logger.warn('Blocked renderer navigation attempt')
+  })
+
+  mainWindow.webContents.on('will-attach-webview', (event) => {
+    event.preventDefault()
+    logger.warn('Blocked webview attachment attempt')
+  })
+
+  mainWindow.webContents.session.setPermissionCheckHandler(() => false)
+  mainWindow.webContents.session.setPermissionRequestHandler((_webContents, _permission, callback) => callback(false))
 
   // mainWindow.removeMenu()
 
@@ -67,8 +89,8 @@ function configureAppMenu() {
     applicationName: APP_TITLE,
     applicationVersion: app.getVersion(),
     version: 'Build 2026.1',
-    copyright: 'Copyright © 2026 EML',
-    credits: 'Developed with EML Lib & Electron',
+    copyright: 'Copyright © 2026 OsirisMC',
+    credits: 'Desarrollado con EML Lib y Electron',
     iconPath: path.join(__dirname, '../build/icon.png')
   })
 
@@ -92,20 +114,9 @@ function configureAppMenu() {
         ]
       : []),
 
-    {
-      label: 'File',
-      submenu: [{ role: 'close' }]
-    },
-
-    {
-      label: 'Edit',
-      submenu: [{ role: 'undo' }, { role: 'redo' }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }]
-    },
-
-    {
-      label: 'View',
-      submenu: [{ role: 'reload' }, { role: 'forceReload' }, { role: 'toggleDevTools' }, { type: 'separator' }, { role: 'togglefullscreen' }]
-    }
+    { label: 'Archivo', submenu: [{ role: 'close', label: 'Cerrar' }] },
+    { label: 'Editar', submenu: [{ role: 'undo', label: 'Deshacer' }, { role: 'redo', label: 'Rehacer' }, { type: 'separator' }, { role: 'cut', label: 'Cortar' }, { role: 'copy', label: 'Copiar' }, { role: 'paste', label: 'Pegar' }, { role: 'selectAll', label: 'Seleccionar todo' }] },
+    { label: 'Ver', submenu: [{ role: 'togglefullscreen', label: 'Pantalla completa' }] }
   ]
 
   const menu = Menu.buildFromTemplate(template)
@@ -114,6 +125,11 @@ function configureAppMenu() {
 
 app.whenReady().then(() => {
   logger.initialize()
+  try {
+    fs.chmodSync(logger.transports.file.getFile().path, 0o600)
+  } catch (err) {
+    logger.warn('Unable to harden log file permissions:', err)
+  }
   configureAppMenu()
   createWindow()
 
@@ -134,4 +150,3 @@ app.whenReady().then(() => {
 app.on('window-all-closed', () => {
   app.quit()
 })
-

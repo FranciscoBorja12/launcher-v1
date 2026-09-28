@@ -7,6 +7,7 @@ import './static/styles/settings.scss'
 import './static/styles/maintenance.scss'
 import './static/styles/update.scss'
 import './static/styles/dialog.scss'
+import '@fortawesome/fontawesome-free/css/all.min.css'
 
 import { initLogin } from './views/login'
 import { initHome } from './views/home'
@@ -18,4 +19,3 @@ initHome()
 initSettings()
 
 bootstrap()
-

@@ -28,7 +28,7 @@ export async function initSettings() {
   initFormValues(sysInfo.resolution)
 
   const versionElem = document.getElementById('version')
-  if (versionElem) versionElem.innerText = `EML Template v${sysInfo.version}`
+  if (versionElem) versionElem.innerText = `Osiris Launcher v${sysInfo.version}`
 }
 
 function initUIListeners() {
@@ -287,4 +287,3 @@ async function addSkin() {
 function getAvailableResolutions(systemResolution: { width: number; height: number }) {
   return resolutionList.filter((res) => res.width <= systemResolution.width && res.height <= systemResolution.height)
 }
-

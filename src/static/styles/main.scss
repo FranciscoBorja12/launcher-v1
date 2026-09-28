@@ -7,8 +7,8 @@
 }
 
 body {
-  font-family: 'Poppins', sans-serif;
-  background: var(--bg-dark);
+  font-family: var(--font-ui);
+  background: var(--bg-deep);
   background-position: center;
   background-size: cover;
   color: var(--text-main);
@@ -45,8 +45,8 @@ a {
     content: '';
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(8px);
+    background: linear-gradient(110deg, rgba(6, 8, 13, 0.93), rgba(6, 8, 13, 0.7));
+    backdrop-filter: blur(6px);
   }
 }
 
@@ -94,7 +94,7 @@ a {
   gap: 10px;
   padding: 10px 20px;
 
-  font-family: 'Poppins', sans-serif;
+  font-family: var(--font-ui);
   font-size: 14px;
   font-weight: 500;
   text-decoration: none;
@@ -116,13 +116,13 @@ a {
 /* Primary Button (Orange) */
 .btn-primary {
   background: var(--primary);
-  color: white;
-  box-shadow: 0 4px 10px rgba(255, 87, 34, 0.3);
+  color: #1a1104;
+  box-shadow: 0 4px 16px rgba(225, 168, 57, 0.24);
 
   &:hover:not(:disabled) {
     background: var(--primary-hover);
     transform: translateY(-1px);
-    box-shadow: 0 6px 15px rgba(255, 87, 34, 0.4);
+    box-shadow: 0 6px 20px rgba(225, 168, 57, 0.3);
   }
 
   &:active:not(:disabled) {
@@ -182,7 +182,7 @@ a {
 
   &:hover {
     color: var(--primary);
-    background: rgba(255, 87, 34, 0.1);
+    background: rgba(225, 168, 57, 0.1);
   }
 }
 

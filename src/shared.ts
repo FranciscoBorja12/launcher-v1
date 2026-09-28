@@ -1,4 +1,5 @@
-import type { Account, IAvatar, ICape, ISkin } from 'eml-lib'
+import type { IAvatar, ICape, ISkin } from 'eml-lib'
+import type { RendererAccount } from '../electron/handlers/auth'
 import { SkinViewer, WalkingAnimation } from 'skinview3d'
 import { skin } from './ipc'
 import { Dialog } from './views/dialog'
@@ -6,13 +7,13 @@ import logger from 'electron-log/renderer'
 
 const DEFAULT_SKIN = {
   id: 'steve',
-  url: 'http://textures.minecraft.net/texture/d5c4ee5ce20aed9e33e866c66caa37178606234b3721084bf01d13320fb2eb3f',
+  url: 'https://textures.minecraft.net/texture/d5c4ee5ce20aed9e33e866c66caa37178606234b3721084bf01d13320fb2eb3f',
   variant: 'classic',
   state: 'active'
 }
 
 const shared = {
-  account: null as Account | null,
+  account: null as RendererAccount | null,
   skins: null as ISkin[] | null,
   capes: null as ICape[] | null,
   avatar: null as IAvatar | null,
@@ -206,4 +207,3 @@ const shared = {
 }
 
 export default shared
-

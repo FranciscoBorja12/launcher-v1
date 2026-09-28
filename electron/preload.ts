@@ -2,7 +2,6 @@ import { contextBridge, ipcRenderer } from 'electron'
 import type { IGameSettings, ISystemInfo } from './handlers/settings'
 import type { IAuthResponse } from './handlers/auth'
 import type {
-  Account,
   BootstrapsEvents,
   CleanerEvents,
   DownloaderEvents,
@@ -25,6 +24,7 @@ console.log('Preload script loaded')
 contextBridge.exposeInMainWorld('api', {
   auth: {
     login: (): Promise<IAuthResponse> => ipcRenderer.invoke('auth:login'),
+    offline: (username: string): Promise<IAuthResponse> => ipcRenderer.invoke('auth:offline', username),
     refresh: (): Promise<IAuthResponse> => ipcRenderer.invoke('auth:refresh'),
     logout: (): Promise<{ success: boolean }> => ipcRenderer.invoke('auth:logout')
   },
@@ -32,7 +32,7 @@ contextBridge.exposeInMainWorld('api', {
     get: (): Promise<any[]> => ipcRenderer.invoke('profiles:get')
   },
   game: {
-    launch: (payload: { account: Account; settings: IGameSettings; profileSlug: string }) => {
+    launch: (payload: { settings: IGameSettings; profileSlug: string }) => {
       ipcRenderer.invoke('game:launch', payload)
     },
 
@@ -84,10 +84,10 @@ contextBridge.exposeInMainWorld('api', {
     patchDebug: (callback: (value: PatcherEvents['patch_debug'][0]) => void) => ipcRenderer.on('game:patch_debug', (_event, value) => callback(value))
   },
   skin: {
-    reload: (account: Account): Promise<void | null> => ipcRenderer.invoke('skin:reload', account),
-    getSkin: (account?: Account): Promise<ISkin[] | null> => ipcRenderer.invoke('skin:get_skin', account),
-    getCape: (account?: Account): Promise<ICape[] | null> => ipcRenderer.invoke('skin:get_cape', account),
-    getAvatar: (account?: Account): Promise<IAvatar | null> => ipcRenderer.invoke('skin:get_avatar', account),
+    reload: (): Promise<void | null> => ipcRenderer.invoke('skin:reload'),
+    getSkin: (): Promise<ISkin[] | null> => ipcRenderer.invoke('skin:get_skin'),
+    getCape: (): Promise<ICape[] | null> => ipcRenderer.invoke('skin:get_cape'),
+    getAvatar: (): Promise<IAvatar | null> => ipcRenderer.invoke('skin:get_avatar'),
     updateSkin: (source: string | Blob, model?: 'classic' | 'slim'): Promise<ISkin[] | null> => ipcRenderer.invoke('skin:update_skin', source, model),
     // updateCape: (source: string | Blob): Promise<ICape[] | null> => ipcRenderer.invoke('skin:update_cape', source), --- Not implemented with Microsoft accounts ---
     switchCape: (id: string): Promise<ICape[] | null> => ipcRenderer.invoke('skin:switch_cape', id),
@@ -128,4 +128,3 @@ contextBridge.exposeInMainWorld('api', {
     getInfo: (): Promise<ISystemInfo> => ipcRenderer.invoke('system:info')
   }
 })
-

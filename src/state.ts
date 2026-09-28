@@ -1,4 +1,5 @@
-import type { Account, IAvatar, ICape, ISkin } from 'eml-lib'
+import type { IAvatar, ICape, ISkin } from 'eml-lib'
+import type { RendererAccount } from '../electron/handlers/auth'
 import logger from 'electron-log/renderer'
 import shared from './shared'
 
@@ -9,7 +10,7 @@ export function getUser() {
   return shared.account
 }
 
-export async function setUser(account: Account, assets: { skins: ISkin[] | null; capes: ICape[] | null; avatar: IAvatar | null }) {
+export async function setUser(account: RendererAccount, assets: { skins: ISkin[] | null; capes: ICape[] | null; avatar: IAvatar | null }) {
   shared.account = account
   shared.skins = assets.skins
   shared.capes = assets.capes
@@ -86,13 +87,13 @@ export function closeOverlay(view: ViewName) {
 function getAccountIcon(type: 'msa' | 'yggdrasil' | 'azuriom' | 'crack') {
   switch (type) {
     case 'msa':
-      return '<i class="fa-brands fa-microsoft"></i>Microsoft account'
+      return '<i class="fa-brands fa-microsoft"></i>Cuenta Microsoft'
     case 'yggdrasil':
       return '<i class="fa-solid fa-user"></i>Yggdrasil account'
     case 'azuriom':
       return '<i class="fa-brands fa-globe"></i>Azuriom account'
     case 'crack':
-      return '<i class="fa-solid fa-user-slash"></i>Cracked account'
+      return '<i class="fa-solid fa-user-slash"></i>Cuenta no-premium'
     default:
       return 'Unknown account type'
   }
@@ -107,6 +108,4 @@ function resetSettingsTab() {
   tabButtons[0].classList.add('active')
   tabContents[0].classList.add('active')
 }
-
-
 

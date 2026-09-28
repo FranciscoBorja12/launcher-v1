@@ -2,7 +2,7 @@ import { setBlockingView, setUser, setView } from './state'
 import { auth, background, bootstraps, maintenance, skin } from './ipc'
 import logger from 'electron-log/renderer'
 
-const DEFAULT_BACKGROUND = '/src/static/images/bg.png'
+const DEFAULT_BACKGROUND = '/src/static/images/osiris-background.png'
 const dateFormatOptions: Intl.DateTimeFormatOptions = {
   day: '2-digit',
   month: '2-digit',
@@ -50,19 +50,19 @@ export async function bootstrap() {
   if (up.updateAvailable) {
     setIndeterminate(false)
     progressBar!.style.width = '0%'
-    progressLabel!.innerText = 'Preparing update...'
+    progressLabel!.innerText = 'Preparando actualización...'
     progressPercent!.innerText = '0%'
     setBlockingView('update')
     await new Promise((r) => setTimeout(r, 500))
     bootstraps.downloadProgress((value) => {
-      progressLabel!.innerText = `Downloading update...`
+      progressLabel!.innerText = `Descargando actualización...`
       const percent = ((value.downloaded.size / value.total.amount) * 100).toFixed(2)
       progressPercent!.innerText = `${percent}%`
       progressBar!.style.width = `${percent}%`
     })
     bootstraps.downloadEnd(async () => {
       setIndeterminate(true)
-      progressLabel!.innerText = `Installing...`
+      progressLabel!.innerText = `Instalando...`
       await bootstraps.install()
     })
     bootstraps.error((err) => {
@@ -80,8 +80,8 @@ export async function bootstrap() {
   if (mn) {
     const start = new Date(mn.startTime as Date)
     const end = new Date(mn.endTime as Date)
-    maintenanceDates.innerText = `From ${start.toLocaleString([], dateFormatOptions)} to ${end.toLocaleString([], dateFormatOptions)}`
-    maintenanceReason.innerText = mn.message ?? 'Please come back later.'
+    maintenanceDates.innerText = `Desde ${start.toLocaleString([], dateFormatOptions)} hasta ${end.toLocaleString([], dateFormatOptions)}`
+    maintenanceReason.innerText = mn.message ?? 'Vuelve a intentarlo más tarde.'
     setBlockingView('maintenance')
     return
   }
@@ -94,9 +94,12 @@ export async function bootstrap() {
     if (bgElement) bgElement.style.backgroundImage = `url('${bgUrl}')`
 
     if (session.success) {
-      const [__, skins, capes, avatar] = await Promise.all([skin.reload(session.account), skin.getSkin(), skin.getCape(), skin.getAvatar()])
-
-      setUser(session.account, { skins, capes, avatar })
+      if (session.account.meta.type === 'crack') {
+        await setUser(session.account, { skins: [], capes: [], avatar: null })
+      } else {
+        const [__, skins, capes, avatar] = await Promise.all([skin.reload(), skin.getSkin(), skin.getCape(), skin.getAvatar()])
+        await setUser(session.account, { skins, capes, avatar })
+      }
       setView('home')
     } else {
       setView('login')
@@ -112,4 +115,3 @@ export async function bootstrap() {
     document.body.classList.add('loaded')
   }
 }
-
